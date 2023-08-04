@@ -438,12 +438,12 @@ class SonarrYTDL(object):
                                 logger.debug(ytdl_format_options)
                             try:
                                 yt_dlp.YoutubeDL(ytdl_format_options).download([dlurl])
-                                self.rescanseries(ser['id'])
                                 logger.info("      Downloaded - {}".format(eps['title']))
                             except Exception as e:
                                 logger.error("      Failed - {} - {}".format(eps['title'], e))
                         else:
                             logger.info("    {}: Missing - {}:".format(e + 1, eps['title']))
+            self.rescanseries(ser['id'])
         else:
             logger.info("Nothing to process")
 
