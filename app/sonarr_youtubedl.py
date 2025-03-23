@@ -54,7 +54,44 @@ def index():
 
 @app.route('/update', methods=['POST'])
 def update_config():
-    new_config = yaml.safe_load(request.form['config'])
+    new_config = {
+        'sonarrytdl': {
+            'scan_interval': request.form.get('sonarrytdl[scan_interval]', type=int),
+            'debug': request.form.get('sonarrytdl[debug]') == 'on'
+        },
+        'sonarr': {
+            'host': request.form.get('sonarr[host]'),
+            'port': request.form.get('sonarr[port]', type=int),
+            'apikey': request.form.get('sonarr[apikey]'),
+            'ssl': request.form.get('sonarr[ssl]') == 'on',
+            'basedir': request.form.get('sonarr[basedir]'),
+            'version': request.form.get('sonarr[version]')
+        },
+        'ytdl': {
+            'default_format': request.form.get('ytdl[default_format]'),
+            'extra_args': request.form.get('ytdl[extra_args]')
+        },
+        'series': []
+    }
+
+    series_count = len([key for key in request.form.keys() if key.startswith('series[') and key.endswith('][title]')])
+    for i in range(series_count):
+        series_item = {
+            'title': request.form.get(f'series[{i}][title]'),
+            'url': request.form.get(f'series[{i}][url]'),
+            'offset': {
+                'days': request.form.get(f'series[{i}][offset][days]', type=int),
+                'hours': request.form.get(f'series[{i}][offset][hours]', type=int)
+            },
+            'regex': {
+                'sonarr': {
+                    'match': request.form.get(f'series[{i}][regex][sonarr][match]'),
+                    'replace': request.form.get(f'series[{i}][regex][sonarr][replace]')
+                }
+            }
+        }
+        new_config['series'].append(series_item)
+
     with open(CONFIGFILE, 'w') as ymlfile:
         yaml.safe_dump(new_config, ymlfile)
     return redirect(url_for('index'))
