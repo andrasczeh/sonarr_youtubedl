@@ -8,7 +8,7 @@ from logging.handlers import RotatingFileHandler
 from fuzzywuzzy import fuzz
 
 
-CONFIGFILE = os.environ['CONFIGPATH']
+CONFIGFILE = os.environ.get('CONFIGPATH', './config.yml')
 # CONFIGPATH = CONFIGFILE.replace('config.yml', '')
 
 

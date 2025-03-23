@@ -10,6 +10,8 @@ import schedule
 import time
 import logging
 import argparse
+from flask import Flask, render_template, request, redirect, url_for
+import yaml
 
 # allow debug arg for verbose logging
 parser = argparse.ArgumentParser(description='Process some integers.')
@@ -22,9 +24,40 @@ logger = setup_logging(True, True, args.debug)
 date_format = "%Y-%m-%dT%H:%M:%SZ"
 now = datetime.now()
 
-CONFIGFILE = os.environ['CONFIGPATH']
+CONFIGFILE = os.environ.get('CONFIGPATH', './config.yml')
 CONFIGPATH = CONFIGFILE.replace('config.yml', '')
 SCANINTERVAL = 60
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    if not os.path.exists(CONFIGFILE):
+        default_config = {
+            'sonarrytdl': {'scan_interval': 1, 'debug': False},
+            'sonarr': {
+                'host': '', 
+                'port': 8989, 
+                'apikey': '', 
+                'ssl': False,
+                'basedir': 'sonarr',
+                'version': 'v4'
+            },
+            'ytdl': {'default_format': 'bestvideo[width<=1920]+bestaudio/best[width<=1920]', 'extra_args': {}},
+            'series': []
+        }
+        with open(CONFIGFILE, 'w') as ymlfile:
+            yaml.safe_dump(default_config, ymlfile)
+    with open(CONFIGFILE, 'r') as ymlfile:
+        cfg = yaml.safe_load(ymlfile)
+    return render_template('index.html', config=cfg)
+
+@app.route('/update', methods=['POST'])
+def update_config():
+    new_config = request.form.to_dict()
+    with open(CONFIGFILE, 'w') as ymlfile:
+        yaml.safe_dump(new_config, ymlfile)
+    return redirect(url_for('index'))
 
 
 class SonarrYTDL(object):
@@ -458,15 +491,20 @@ class SonarrYTDL(object):
 
 
 def main():
-    client = SonarrYTDL()
-    series = client.filterseries()
-    episodes = client.getseriesepisodes(series)
-    client.download(series, episodes)
-    logger.info('Waiting...')
-
+    config_file = os.path.abspath(CONFIGFILE)
+    config_file_exists = os.path.exists(config_file)
+    if config_file_exists:
+        client = SonarrYTDL()
+        series = client.filterseries()
+        episodes = client.getseriesepisodes(series)
+        client.download(series, episodes)
+        logger.info('Waiting...')
+    else:
+        logger.warning('Configuration file not found. Skipping episode watching part.')
 
 if __name__ == "__main__":
     logger.info('Initial run')
+    app.run(host='0.0.0.0', port=5050)
     main()
     schedule.every(int(SCANINTERVAL)).minutes.do(main)
     while True:

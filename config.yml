@@ -1,0 +1,12 @@
+series: []
+sonarr:
+  apikey: ''
+  host: ''
+  port: 8989
+  ssl: false
+sonarrytdl:
+  debug: false
+  scan_interval: 1
+ytdl:
+  default_format: bestvideo[width<=1920]+bestaudio/best[width<=1920]
+  extra_args: {}

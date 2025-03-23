@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Config Editor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script>
+        function addSeries() {
+            const seriesContainer = document.getElementById('series-container');
+            const seriesCount = seriesContainer.children.length;
+            const newSeries = document.createElement('div');
+            newSeries.className = 'series-item';
+            newSeries.innerHTML = `
+                <h3>New Series</h3>
+                <label for="title">Title:</label>
+                <input type="text" id="title" name="series[${seriesCount}][title]" value=""><br>
+                <label for="url">URL:</label>
+                <input type="text" id="url" name="series[${seriesCount}][url]" value=""><br>
+                <label for="offset_days">Offset Days:</label>
+                <input type="text" id="offset_days" name="series[${seriesCount}][offset][days]" value="2"><br>
+                <label for="offset_hours">Offset Hours:</label>
+                <input type="text" id="offset_hours" name="series[${seriesCount}][offset][hours]" value="3"><br>
+                <label for="regex_match">Regex Match:</label>
+                <input type="text" id="regex_match" name="series[${seriesCount}][regex][sonarr][match]" value=".\\-.#[0-9]*$"><br>
+                <label for="regex_replace">Regex Replace:</label>
+                <input type="text" id="regex_replace" name="series[${seriesCount}][regex][sonarr][replace]" value=""><br>
+            `;
+            seriesContainer.appendChild(newSeries);
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Edit Configuration</h1>
+        <form action="{{ url_for('update_config') }}" method="post">
+            <h2>Sonarr YTDL</h2>
+            <label for="scan_interval">Scan Interval:</label>
+            <input type="text" id="scan_interval" name="sonarrytdl[scan_interval]" value="{{ config['sonarrytdl']['scan_interval'] }}"><br>
+            <label for="debug">Debug:</label>
+            <input type="checkbox" id="debug" name="sonarrytdl[debug]" {% if config['sonarrytdl']['debug'] %}checked{% endif %}><br>
+
+            <h2>Sonarr</h2>
+            <label for="host">Host:</label>
+            <input type="text" id="host" name="sonarr[host]" value="{{ config['sonarr']['host'] }}"><br>
+            <label for="port">Port:</label>
+            <input type="text" id="port" name="sonarr[port]" value="{{ config['sonarr']['port'] }}"><br>
+            <label for="apikey">API Key:</label>
+            <input type="text" id="apikey" name="sonarr[apikey]" value="{{ config['sonarr']['apikey'] }}"><br>
+            <label for="ssl">SSL:</label>
+            <input type="checkbox" id="ssl" name="sonarr[ssl]" {% if config['sonarr']['ssl'] %}checked{% endif %}><br>
+            <label for="basedir">Base Directory:</label>
+            <input type="text" id="basedir" name="sonarr[basedir]" value="{{ config['sonarr']['basedir'] }}"><br>
+            <label for="version">Version:</label>
+            <input type="text" id="version" name="sonarr[version]" value="{{ config['sonarr']['version'] }}"><br>
+
+            <h2>YTDL</h2>
+            <label for="default_format">Default Format:</label>
+            <input type="text" id="default_format" name="ytdl[default_format]" value="{{ config['ytdl']['default_format'] }}"><br>
+            <label for="extra_args">Extra Args:</label>
+            <input type="text" id="extra_args" name="ytdl[extra_args]" value="{{ config['ytdl']['extra_args'] }}"><br>
+
+            <h2>Series</h2>
+            <div id="series-container">
+                {% for series in config['series'] %}
+                    <div class="series-item">
+                        <h3>{{ series['title'] }}</h3>
+                        <label for="title">Title:</label>
+                        <input type="text" id="title" name="series[{{ loop.index0 }}][title]" value="{{ series['title'] }}"><br>
+                        <label for="url">URL:</label>
+                        <input type="text" id="url" name="series[{{ loop.index0 }}][url]" value="{{ series['url'] }}"><br>
+                        <label for="offset_days">Offset Days:</label>
+                        <input type="text" id="offset_days" name="series[{{ loop.index0 }}][offset][days]" value="{{ series['offset']['days'] }}"><br>
+                        <label for="offset_hours">Offset Hours:</label>
+                        <input type="text" id="offset_hours" name="series[{{ loop.index0 }}][offset][hours]" value="{{ series['offset']['hours'] }}"><br>
+                        <label for="regex_match">Regex Match:</label>
+                        <input type="text" id="regex_match" name="series[{{ loop.index0 }}][regex][sonarr][match]" value="{{ series['regex']['sonarr']['match'] }}"><br>
+                        <label for="regex_replace">Regex Replace:</label>
+                        <input type="text" id="regex_replace" name="series[{{ loop.index0 }}][regex][sonarr][replace]" value="{{ series['regex']['sonarr']['replace'] }}"><br>
+                    </div>
+                {% endfor %}
+            </div>
+            <button type="button" onclick="addSeries()">Add Series</button><br><br>
+
+            <input type="submit" value="Save">
+        </form>
+    </div>
+</body>
+</html>
