@@ -10,7 +10,7 @@ import schedule
 import time
 import logging
 import argparse
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, json, render_template, request, redirect, url_for
 import yaml
 import threading
 
@@ -70,7 +70,7 @@ def update_config():
         },
         'ytdl': {
             'default_format': request.form.get('ytdl[default_format]'),
-            'extra_args': request.form.get('ytdl[extra_args]')
+            'extra_args': json.loads(request.form.get('ytdl[extra_args]', '{}'))
         },
         'series': []
     }
@@ -539,17 +539,20 @@ def main():
         logger.info('Waiting...')
     else:
         logger.warning('Configuration file not found. Skipping episode watching part.')
-        import inotify.adapters
 
         def monitor_config_file():
-            notifier = inotify.adapters.Inotify()
-            notifier.add_watch(config_file)
+            try:
+                import inotify.adapters
+                notifier = inotify.adapters.Inotify()
+                notifier.add_watch(config_file)
 
-            for event in notifier.event_gen(yield_nones=False):
-                (_, type_names, path, filename) = event
-                if 'IN_MODIFY' in type_names:
-                    logger.info('Configuration file modified. Rerunning main.')
-                    main()
+                for event in notifier.event_gen(yield_nones=False):
+                    (_, type_names, path, filename) = event
+                    if 'IN_MODIFY' in type_names:
+                        logger.info('Configuration file modified. Rerunning main.')
+                        main()
+            except Exception as e:
+                logger.error(f"Error monitoring config file: {e}")
 
         monitor_thread = threading.Thread(target=monitor_config_file)
         monitor_thread.start()
