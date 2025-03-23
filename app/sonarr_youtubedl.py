@@ -54,7 +54,7 @@ def index():
 
 @app.route('/update', methods=['POST'])
 def update_config():
-    new_config = request.form.to_dict()
+    new_config = yaml.safe_load(request.form['config'])
     with open(CONFIGFILE, 'w') as ymlfile:
         yaml.safe_dump(new_config, ymlfile)
     return redirect(url_for('index'))
