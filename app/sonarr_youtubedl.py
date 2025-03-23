@@ -12,6 +12,7 @@ import logging
 import argparse
 from flask import Flask, render_template, request, redirect, url_for
 import yaml
+import threading
 
 # allow debug arg for verbose logging
 parser = argparse.ArgumentParser(description='Process some integers.')
@@ -538,10 +539,28 @@ def main():
         logger.info('Waiting...')
     else:
         logger.warning('Configuration file not found. Skipping episode watching part.')
+        import inotify.adapters
+
+        def monitor_config_file():
+            notifier = inotify.adapters.Inotify()
+            notifier.add_watch(config_file)
+
+            for event in notifier.event_gen(yield_nones=False):
+                (_, type_names, path, filename) = event
+                if 'IN_MODIFY' in type_names:
+                    logger.info('Configuration file modified. Rerunning main.')
+                    main()
+
+        monitor_thread = threading.Thread(target=monitor_config_file)
+        monitor_thread.start()
 
 if __name__ == "__main__":
     logger.info('Initial run')
-    app.run(host='0.0.0.0', port=5050)
+    def run_flask():
+        app.run(host='0.0.0.0', port=5050)
+
+    flask_thread = threading.Thread(target=run_flask)
+    flask_thread.start()
     main()
     schedule.every(int(SCANINTERVAL)).minutes.do(main)
     while True:
